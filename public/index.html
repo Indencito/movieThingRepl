@@ -1,0 +1,56 @@
+<!DOCTYPE=HTML>
+<html>
+	<head>
+		<title>Test</title>
+		<style>
+			input {
+				width:100%;
+			}
+		</style>
+		<script>
+
+			window.onload = function(){
+
+				console.log("load")
+
+				var input = document.getElementById("input")
+
+				async function test() {
+
+					var directory = input.value
+
+					const response = await fetch('/epid', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json'
+						},
+						body: JSON.stringify({ data: directory })
+					});
+					const result = await response.json();
+
+					var mainHTML = result.result
+
+					var match = mainHTML.match(/"tvid":\s*"(\d+)"/)
+
+					document.getElementById("result").innerHTML = match[0]
+				};
+
+				input.addEventListener('keydown', function(event) {
+
+					console.log("clik")
+					if (event.key === 'Enter') {
+
+						test()
+					}
+				})
+			}
+			// test()
+		</script>
+	</head>
+	<body>
+		<input id="input" type="text" value="rick-and-morty" placeholder="Insert Jilo Viral show directory.">
+		<div id="result">
+			
+		</div>
+	</body>
+</html>
