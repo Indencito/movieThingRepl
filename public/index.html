@@ -30,9 +30,17 @@
 
 					var mainHTML = result.result
 
-					var match = mainHTML.match(/"tvid":\s*"(\d+)"/)
+					var match = mainHTML.match(/"tvid":\s*"([^"]+)"/)
+					var match2 = mainHTML.match(/"imdb_id":\s*"([^"]+)"/)
+					console.log(mainHTML)
+					var result2 = null
+					if (match){
+						result2 = "https://vidsrc.cc/v2/embed/tv/"+match[1]+"/SEASON/EPISODE?autoplay=false"
+					}else{
+						result2 = "https://vidsrc.cc/v2/embed/movie/"+match2[1]+"?autoplay=false"
+					}
+					document.getElementById("result").textContent = result2
 
-					document.getElementById("result").innerHTML = match[0]
 				};
 
 				input.addEventListener('keydown', function(event) {

@@ -8,12 +8,8 @@ const publicDir = path.join(__dirname, 'public');
 // ==== API Table: Add your endpoints and functions here ====
 const apiRoutes = {
     '/epid': async (data) => {
-        // Example async operation
-        // (e.g., simulate waiting for something like a DB or API call)
-
-        var url = "https://jiloviral.com/"+data.data
-
-        console.log(url)
+        var url = "https://jiloviral.com/" + data.data;
+        console.log(url);
 
         var html = await fetch(url)
           .then(response => {
@@ -23,20 +19,30 @@ const apiRoutes = {
             return response.text();
           })
           .then(data => {
-            return data
+            return data;
           })
           .catch(error => {
             console.error('Fetch error:', error);
           });
 
-        
-        
-        return html
+        return html;
     },
 };
 // ==========================================================
 
 const server = http.createServer(async (req, res) => {
+    // --- Add CORS headers ---
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    // --- Handle preflight (OPTIONS) requests ---
+    if (req.method === 'OPTIONS') {
+        res.writeHead(204); // No Content
+        res.end();
+        return;
+    }
+
     if (req.method === 'POST' && apiRoutes[req.url]) {
         let body = '';
 
@@ -55,7 +61,7 @@ const server = http.createServer(async (req, res) => {
 
             try {
                 const handler = apiRoutes[req.url];
-                const result = await handler(data);  // await the async function
+                const result = await handler(data);
 
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ result }));
