@@ -5,30 +5,23 @@ const path = require('path');
 const PORT = 3000;
 const publicDir = path.join(__dirname, 'public');
 
-// ==== API Table: Add your endpoints and functions here ====
+// ==== API Table: Only /epid stays here ====
 const apiRoutes = {
     '/epid': async (data) => {
-        var url = "https://jiloviral.com/" + data.data;
+        const url = "https://jiloviral.com/" + data.data;
         console.log(url);
 
-        var html = await fetch(url)
-          .then(response => {
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.text();
-          })
-          .then(data => {
-            return data;
-          })
-          .catch(error => {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return await response.text();
+        } catch (error) {
             console.error('Fetch error:', error);
-          });
-
-        return html;
-    },
+            throw new Error(`Error fetching URL: ${error.message}`);
+        }
+    }
 };
-// ==========================================================
+// ==========================================
 
 const server = http.createServer(async (req, res) => {
     // --- Add CORS headers ---
@@ -38,11 +31,12 @@ const server = http.createServer(async (req, res) => {
 
     // --- Handle preflight (OPTIONS) requests ---
     if (req.method === 'OPTIONS') {
-        res.writeHead(204); // No Content
+        res.writeHead(204);
         res.end();
         return;
     }
 
+    // --- /epid API (POST) ---
     if (req.method === 'POST' && apiRoutes[req.url]) {
         let body = '';
 
@@ -51,15 +45,8 @@ const server = http.createServer(async (req, res) => {
         });
 
         req.on('end', async () => {
-            let data;
             try {
-                data = JSON.parse(body);
-            } catch (err) {
-                res.writeHead(400, { 'Content-Type': 'application/json' });
-                return res.end(JSON.stringify({ error: 'Invalid JSON' }));
-            }
-
-            try {
+                const data = JSON.parse(body);
                 const handler = apiRoutes[req.url];
                 const result = await handler(data);
 
@@ -71,27 +58,38 @@ const server = http.createServer(async (req, res) => {
             }
         });
 
+    // --- Dynamic /fetch/:url route ---
+    } else if (req.method === 'GET' && req.url.startsWith('/fetch/')) {
+        const targetUrlEncoded = req.url.slice('/fetch/'.length);
+        const targetUrl = decodeURIComponent(targetUrlEncoded);
+
+        console.log(`Fetching: ${targetUrl}`);
+
+        try {
+            const response = await fetch(targetUrl);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const text = await response.text();
+
+            res.writeHead(200, { 'Content-Type': 'text/plain' });
+            res.end(text);
+        } catch (error) {
+            console.error('Fetch error:', error);
+            res.writeHead(500, { 'Content-Type': 'text/plain' });
+            res.end(`Error fetching URL: ${error.message}`);
+        }
+
+    // --- Serve static files ---
     } else {
         let filePath = path.join(publicDir, req.url === '/' ? 'index.html' : req.url);
         const extname = path.extname(filePath);
 
         let contentType = 'text/html';
         switch (extname) {
-            case '.js':
-                contentType = 'text/javascript';
-                break;
-            case '.css':
-                contentType = 'text/css';
-                break;
-            case '.json':
-                contentType = 'application/json';
-                break;
-            case '.png':
-                contentType = 'image/png';
-                break;
-            case '.jpg':
-                contentType = 'image/jpg';
-                break;
+            case '.js': contentType = 'text/javascript'; break;
+            case '.css': contentType = 'text/css'; break;
+            case '.json': contentType = 'application/json'; break;
+            case '.png': contentType = 'image/png'; break;
+            case '.jpg': contentType = 'image/jpg'; break;
         }
 
         fs.readFile(filePath, (err, content) => {
